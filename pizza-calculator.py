@@ -8,7 +8,7 @@ chosen_size = tk.StringVar()
 chosen_amount = tk.StringVar()
 
 pizza_information = {}
-
+pizza_prices = {"small": 4, "medium": 6, "large": 11}
 
 # Clear the window
 def clear_window():
@@ -27,8 +27,9 @@ def reset_values():
 def validate_amount():  
     # If the user chose a number
     if chosen_amount.get().isdigit():
-        clear_window() # Clear the window
-        ask_receipt() # Go to the screen to ask if the user wants to show the receipt
+        if int(chosen_amount.get()) > 0:
+            clear_window() # Clear the window
+            ask_receipt() # Go to the screen to ask if the user wants to show the receipt
 
 
 # Check if the user chose a size for the pizza
@@ -68,7 +69,22 @@ def add_pizza():
 
 # Shows the receipt
 def receipt():
-    pass
+    total_price = 0
+
+    # Start of the receipt
+    tk.Label(text="RECEIPT", font=("arial", 18, "bold")).pack(fill='y') 
+    tk.Label(text="--------------------------------------", font=("arial", 16)).pack(fill='y') 
+
+    # For every pizza that is bought
+    for pizza, amount in pizza_information.items():
+        pizza_price = pizza_prices[pizza] # Pizza price
+        pizza_total_price = pizza_price * amount # Total price for all the pizza's with that size
+        total_price += pizza_total_price # Total price for all the pizza's
+
+        tk.Label(text=f"{pizza} pizza = {pizza_prices[pizza]} * {amount} = {pizza_total_price} euro", font=("arial", 16)).pack(fill='y') # Show the information about the pizza
+    else:
+        tk.Label(text="--------------------------------------", font=("arial", 16)).pack(fill='y') # End of the receipt
+        tk.Label(text=f"totaal: {total_price} euro", font=("arial", 16)).pack(fill='y') # Total price
 
 
 # Ask if the user wants to show the receipt
