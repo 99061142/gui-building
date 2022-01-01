@@ -67,6 +67,7 @@ flavour_answers = [] # Every flavour the user bought
 
 user_role = tk.StringVar(value='particulier') # Users role
 scoops_litres = tk.StringVar(value=1) # Amount of scoop(s)/litre(s)
+amount_left_str = tk.StringVar()
 
 
 # Clear the window
@@ -89,24 +90,25 @@ def validate_amount():
 
 # Check if the user chose a valid flavour for every scoop/litre
 def validate_flavours():
-    validation = True
+    total_amount = 0
 
-    # Check every answer
-    for flavour in flavour_answers:
-        # If the answer is not a valid flavour
-        if flavour.get() not in flavours: 
-            validation = False
+    scoops_litres_amount = int(scoops_litres.get()) # Total scoop(s) / litre(s)
 
+    question_information = "bolletje(s)" if user_role.get() == "particulier" else "liter(s)" # Information if the user wants to buy scoops or litres
+
+    # Check every flavour amount the user chose
+    for flavour_amount in flavour_answers:
+        flavour_amount = int(flavour_amount.get()) 
+
+        total_amount += flavour_amount # Add the amount to the total amount
     else:
-        # If the user chose a valid flavour for every scoop/litr
-        if validation:
-            # If the user is a individual
-            if user_role.get() == "particulier":
-                ask_toppings()
-            
-            # If the user is from a business
-            else:
-                make_receipt()
+        # When the user can add more scoop(s) / litre(s) to a flavour
+        if scoops_litres_amount > total_amount:
+            amount_left_str.set(f"U kan nog {scoops_litres_amount - total_amount} {question_information} toevoegen aan een smaak")
+        
+        # When the user did add more scoop(s) / litre(s) than the max amount
+        elif scoops_litres_amount < total_amount:
+            amount_left_str.set(f"U heeft {total_amount - scoops_litres_amount} {question_information} teveel toegevoegd aan een smaak")
 
 
 # Get the role
@@ -144,25 +146,22 @@ def get_scoops():
 def ask_flavour():
     clear_window()
 
-    total_amount = int(scoops_litres.get()) # Users input
-    number = 1
+    total_amount = int(scoops_litres.get()) # Chosen amount for scoop(s) / litre(s)
 
-    while number <= total_amount:
+    # Show the user how many scoop(s)/litre(s) he can add to the flavours
+    question_information = "bolletjes" if user_role.get() == "particulier" else "liters"
+    amount_left_str.set(f"U kan nog {total_amount} {question_information} toevoegen aan een smaak")
+    tk.Label(textvariable=amount_left_str, font=('arial', 14)).grid(row=0, column=0)
+
+    # For every flavour option
+    for row, flavour in enumerate(flavours):
+        row += 1
+
         answer = tk.StringVar()
         flavour_answers.append(answer)
-
-        question = "Welke smaak wilt u voor "
-        question += f"bolletje nummer {number}" if user_role.get() == "particulier" else f"liter nummer {number}"
-
-        tk.Label(text=question, font=('arial', 14)).grid(row=number, column=0) # Question
-
-        # Input
-        question_input = ttk.Combobox(window, textvariable=answer)
-        question_input['values'] = flavours # Flavour options
-        question_input['state'] = "readonly" # User must choose a value that is a valid option
-        question_input.grid(row=number, column=1)
-
-        number += 1
+    
+        tk.Label(text=f"Hoeveel {question_information} wilt u met de smaak {flavour}", font=('arial', 14)).grid(row=row, column=0) # Question
+        tk.Spinbox(window, textvariable=answer, from_=0, to=float('inf')).grid(row=row, column=1) # Input
     
     # When every input is made
     else:
