@@ -61,8 +61,12 @@ toppings = {
 }
 
 
-user_role = tk.StringVar(value='particulier')
-scoops_litres = tk.StringVar(value=1)
+flavours = ("Aardbei", "Chocolada", "Vanille") # Flavours the user can buy
+flavour_answers = [] # Every flavour the user bought
+
+
+user_role = tk.StringVar(value='particulier') # Users role
+scoops_litres = tk.StringVar(value=1) # Amount of scoop(s)/litre(s)
 
 
 # Clear the window
@@ -70,6 +74,39 @@ def clear_window():
     # Clear the window
     for items in window.winfo_children():
         items.destroy()
+
+
+# Validate if the user chose a number higher than 0 
+def validate_amount():
+    amount = scoops_litres.get() # Users input
+
+    # IF the user chose a number higher than 0
+    if amount.isdigit() and amount[0] != '0':
+        ask_flavour() # Ask the flavour per scoop / litre
+    else:
+        scoops_litres.set(1) # Reset the value for the amount the user wants to buy
+
+
+# Check if the user chose a valid flavour for every scoop/litre
+def validate_flavours():
+    validation = True
+
+    # Check every answer
+    for flavour in flavour_answers:
+        # If the answer is not a valid flavour
+        if flavour.get() not in flavours: 
+            validation = False
+
+    else:
+        # If the user chose a valid flavour for every scoop/litr
+        if validation:
+            # If the user is a individual
+            if user_role.get() == "particulier":
+                ask_toppings()
+            
+            # If the user is from a business
+            else:
+                make_receipt()
 
 
 # Get the role
@@ -103,20 +140,43 @@ def get_scoops():
     tk.Button(text="Submit", font=('arial', 10), bg='gray', command=validate_amount).grid(columnspan=2, sticky='nsew') # Button to submit the answer
 
 
-# Validate if the user chose a number higher than 0 
-def validate_amount():
-    amount = scoops_litres.get() # Users input
-
-    # IF the user chose a number higher than 0
-    if amount.isdigit() and amount[0] != '0':
-        ask_flavour() # Ask the flavour per scoop / litre
-    else:
-        scoops_litres.set(1) # Reset the value for the amount the user wants to buy
-
-
 # Ask the flavour per scoop / litre
 def ask_flavour():
     clear_window()
+
+    total_amount = int(scoops_litres.get()) # Users input
+    number = 1
+
+    while number <= total_amount:
+        answer = tk.StringVar()
+        flavour_answers.append(answer)
+
+        question = "Welke smaak wilt u voor "
+        question += f"bolletje nummer {number}" if user_role.get() == "particulier" else f"liter nummer {number}"
+
+        tk.Label(text=question, font=('arial', 14)).grid(row=number, column=0) # Question
+
+        # Input
+        question_input = ttk.Combobox(window, textvariable=answer)
+        question_input['values'] = flavours # Flavour options
+        question_input['state'] = "readonly" # User must choose a value that is a valid option
+        question_input.grid(row=number, column=1)
+
+        number += 1
+    
+    # When every input is made
+    else:
+        tk.Button(text="Submit", font=('arial', 10), bg='gray', command=validate_flavours).grid(columnspan=2, sticky='nsew') # Button to submit the answer
+
+
+# Ask which topping the user wants to buy per scoop
+def ask_toppings():
+    pass
+
+
+# Add the items to the receipt
+def make_receipt():
+    pass
 
 
 
