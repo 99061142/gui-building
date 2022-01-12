@@ -59,10 +59,12 @@ scoops_litres_amount = tk.StringVar(value='1') # Amount of scoop(s)/litre(s)
 scoop_litre = tk.StringVar() # Information if the user must choose the amount of scoop(s) or litre(s)
 cone_cup = tk.StringVar(value="cone") # Users choice for a cone or a cup
 label_text = tk.StringVar() # Text inside the label
+want_receipt = tk.StringVar() # If the user wants the receipt
 
+function_num = 0 # Index for the dictionary of the function information
+must_ask_cone_cup = False # If the user must gets asked for a cone / cup
 flavour_amounts = [] # Amount for the flavours
 
-function_num = 0
 
 
 # Clear the window
@@ -111,7 +113,7 @@ def make_input(input:str, input_storage, array=None):
     elif input == "combobox":
         combobox = ttk.Combobox(window, textvariable=input_storage, state='readonly')
         combobox['values'] = array # All the options
-        combobox.grid(row=1, column=1, sticky='e')
+        combobox.grid(row=0, column=1, sticky='w')
 
 
 # Get the information what the user can buy
@@ -125,6 +127,8 @@ def validate_role():
 
 # Validate the amount for the scoop(s) / litre(s)
 def validate_amount():
+    global must_ask_cone_cup
+
     # Check if the user chose a number
     try:
         amount = int(scoops_litres_amount.get()) # Amount the user chose
@@ -135,21 +139,17 @@ def validate_amount():
 
     # If the user chose a number
     else:
+        # Standard a cup
+        if amount >= 4 and amount <= 8:
+            cone_cup.set("cup")
+        else:
+            must_ask_cone_cup = True
+
         # If the user chose a number that is not a valid option
         if amount <= 0 or amount > 8:
             scoops_litres_amount.set(1) # Reset the amount the user wants to buy
-
-        # Ask if the user wants a cone or a cup
-        if amount >= 1 and amount <= 3:
-            function_information["cone_cup"] = cone_cup_function_information
-
-        # Standard a cup
         else:
-            cone_cup.set("cup")
-        
-        # Go to the next question
-        if amount >= 0 and amount <= 8:
-            make_question()
+            make_question() # Go to the next question
 
 
 # Check if the user chose a flavour for every scoop / litre 
@@ -173,7 +173,7 @@ def validate_flavour():
         elif flavour_total_amount < max_amount:
             difference = max_amount - flavour_total_amount 
 
-            message = f"You can add {difference} {scoop_litre.get()}(s) more"
+            message = f"You can add {difference} more {scoop_litre.get()}(s)"
 
         if flavour_total_amount != max_amount:
             label_text.set(message)
@@ -182,12 +182,16 @@ def validate_flavour():
             make_question()
 
 
+# Check if the user wants to see the receipt
+def validate_ask_receipt():
+    pass
+
 
 
 def make_question(): 
     global function_num
 
-    function_name = list( function_information.keys() )[function_num] # Make a list with names in the dictionary
+    function_name = list( function_information.keys() )[function_num] # Get the key for the question
 
     # Get all the information to make the question
     question = function_information[function_name]['question']() # Question
@@ -213,7 +217,19 @@ def make_question():
 
     make_submit(submit_function) # Make the submit button
 
+    # Go to the next question
     function_num += 1
+
+    try:
+        new_function_name = list( function_information.keys() )[function_num] # Check if there is another question after the question the user is in
+    except IndexError:
+        function_num = 0 # Reset the question index
+    else:
+        # If the user don't need to get asked for a cone or a cup
+        if new_function_name == "cone_cup" and not must_ask_cone_cup:
+            function_num += 1
+
+
 
 
 function_information = {
@@ -238,16 +254,23 @@ function_information = {
         "input_array": ("Amount of strawberry", "Amount of chocolate", "Amount of strawberry", "Amount of strawberry"),
         "submit_function": validate_flavour,
         "stringvar": flavour_amounts
+    },
+
+    "cone_cup": {
+        "question": lambda: f"Do you want the {scoops_litres_amount.get()} in a cup or a bucket?",
+        "input": "combobox",
+        "input_array": ("cone", "cup"),
+        "submit_function": make_question,
+        "stringvar": cone_cup
+    },
+
+    "ask_receipt": {
+        "question": lambda: f"Do you want the receipt?",
+        "input": "radiobutton",
+        "input_array": ("yes", "no"),
+        "submit_function": validate_ask_receipt,
+        "stringvar": want_receipt
     }
-}
-
-
-cone_cup_function_information = {
-    "question": lambda: f"Do you want the {scoops_litres_amount.get()} in a cup or a bucket?",
-    "input": "combobox",
-    "input_array": ("cone", "cup"),
-    "submit_function": "",
-    "stringvar": cone_cup
 }
 
 
