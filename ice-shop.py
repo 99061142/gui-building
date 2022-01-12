@@ -244,7 +244,7 @@ def add_items():
 
     items[role][scoop_litre.get()]['amount'] += amount
 
-    if cone_cup.get():
+    if cone_cup.get() and user_role.get() == "customer":
         items[role][cone_cup.get()]['amount'] += 1
 
 
@@ -254,31 +254,49 @@ def show_receipt():
 
     receipt_price = 0
 
-    for row, (item, item_information) in enumerate(zip(items[role], items[role].values())):
-        bought_item = False
 
+    tk.Label(text='---------["Papi Gelato"]---------', font=('arial', 14)).grid(pady=('5', '10')) # Receipt start
+
+    # For every item that the user can buy
+    for item, item_information in zip(items[role], items[role].values()):
+        bought_item = False # If the user bought the item
+
+        # Check if the user bought the item
         try:
+            # Check with the role, if the user bought the item
             if item_information[cone_cup.get()]['amount'] > 0:
                 bought_item = True    
         except KeyError:
+            # Check without the role, if the user bought the item
             if item_information['amount'] > 0:
                 bought_item = True
 
-
+        # If the user bought the item
         if bought_item:
+            # Get the information with the role of the user
             try: 
                 item_price = item_information[cone_cup.get()]['price']
                 item_amount = item_information[cone_cup.get()]['amount']
+            
+            # Get the information without the role of the user
             except KeyError:
                 item_price = item_information['price']
                 item_amount = item_information['amount']
 
+            total_item_price = item_amount * item_price # Total price of the item
+            receipt_price += total_item_price # Total receipt price without VAT
 
-            total_item_price = item_amount * item_price
-            receipt_price += total_item_price
+            tk.Label(text=f"{item}           {item_amount} * {item_price}   = €{round(total_item_price, 2)}", font=('arial', 14)).grid(pady=('0', '5')) # Show the item, amount, price and the total price for the item
+    else:
+        # Make the ending of the receipt
+        tk.Label(text="                              ---------", font=('arial', 14)).grid(pady=('0', '5'))  
+        tk.Label(text=f"Total                     = €{round(receipt_price, 2)}", font=('arial', 14)).grid() # Show the total price with VAT
 
-            tk.Label(text=f"{item}      {item_amount} * {item_price}    =   {round(total_item_price, 2)}  ", font=('arial', 14)).grid(row=row, column=0, pady=('0', '10')) # Make the question and add it to the window    
+        # If the users role is business
+        if user_role.get() == "business":
+            vat_price = receipt_price * 0.09
 
+            tk.Label(text=f"VAT (9%)               = €{round(vat_price, 2)}", font=('arial', 14)).grid() # Show the VAT price
 
 
 
