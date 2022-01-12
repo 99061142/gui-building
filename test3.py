@@ -79,10 +79,10 @@ def make_label():
     tk.Label(textvariable=label_text, font=('arial', 14)).grid(row=0, column=0, pady=('0', '10')) # Make the question and add it to the window    
 
 
+# Update the label text
 def update_label_text(text):
     label_text.set(text)
     make_label()
-
 
 
 # Make the submit button
@@ -184,10 +184,15 @@ def validate_flavour():
 
 # Check if the user wants to see the receipt
 def validate_ask_receipt():
-    pass
+    add_items()
+
+    if want_receipt.get() == "no":
+        make_question() # Ask the same questions again
+    else:
+        show_receipt() # Show the receipt to the user
 
 
-
+# Make the question with the function information
 def make_question(): 
     global function_num
 
@@ -228,6 +233,25 @@ def make_question():
         # If the user don't need to get asked for a cone or a cup
         if new_function_name == "cone_cup" and not must_ask_cone_cup:
             function_num += 1
+
+
+# Add the items to the receipt dictionary
+def add_items():
+    amount = int(scoops_litres_amount.get())
+    role = user_role.get()
+    
+
+    items[role][scoop_litre.get()]['amount'] += amount
+
+    if must_ask_cone_cup:
+        items[role][cone_cup.get()]['amount'] += 1
+
+
+# Show the bought items to the user
+def show_receipt():
+    pass
+
+
 
 
 
