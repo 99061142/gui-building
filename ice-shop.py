@@ -6,181 +6,328 @@ window = tk.Tk() # Make the window
 
 # Item amount / prices
 items = {
-    "bolletje": {
-        "price": 0.95,
-        "amount": 0,
-    },
-
-    "liter": {
-        "price": 9.8,
-        "amount": 0
-    },
-
-    "hoorntje": {
-        "price": 1.25,
-        "amount": 0,
-    },
-
-    "bakje": {
-        "price":  0.75,
-        "amount": 0,
-    },
-}
-
-
-# Topping amounts / prices
-toppings = {    
-    "geen": {
-        "price": 0,
-        "amount": 0
-    },
-
-    "slagroom": {
-        "price": 0.5,
-        "amount": 0,
-    },
-    
-    "sprinkels": {
-        "price": 0.3,
-        "amount": 0,
-    },
-
-    "caramel_saus": {
-        "hoorntje": {
-            "price": 0.6,
-            "amount": 0
+    "customer": {
+        "scoop": {
+            "price": 0.95,
+            "amount": 0,
         },
 
-        "bakje": {
-            "price": 0.9,
-            "amount": 0
+        "cone": {
+            "price": 1.25,
+            "amount": 0,
         },
-    
-        "amount": 0,
+
+        "cup": {
+            "price":  0.75,
+            "amount": 0,
+        },
+        
+        "whipped_cream": {
+            "price": 0.5,
+            "amount": 0,
+        },
+            
+        "sprinkles": {
+            "price": 0.3,
+            "amount": 0,
+        },
+
+        "caramel_sauce": {
+            "cone": {
+                "price": 0.6,
+                "amount": 0
+            },
+
+            "cup": {
+                "price": 0.9,
+                "amount": 0
+            }
+        }
+    },
+
+    "business": {
+        "litre": {
+            "price": 9.8,
+            "amount": 0
+        }
     }
 }
 
 
-flavours = ("Aardbei", "Chocolada", "Vanille") # Flavours the user can buy
-flavour_answers = [] # Every flavour the user bought
+user_role = tk.StringVar(value='customer') # Users role
+scoops_litres_amount = tk.StringVar(value='1') # Amount of scoop(s)/litre(s)
+scoop_litre = tk.StringVar() # Information if the user must choose the amount of scoop(s) or litre(s)
+cone_cup = tk.StringVar(value="cone") # Users choice for a cone or a cup
+label_text = tk.StringVar() # Text inside the label
+want_receipt = tk.StringVar(value="no") # If the user wants the receipt
 
+function_num = 0 # Index for the dictionary of the function information
+must_ask_cone_cup = False # If the user must gets asked for a cone / cup
+flavour_amounts = [] # Amount for the flavours
 
-user_role = tk.StringVar(value='particulier') # Users role
-scoops_litres = tk.StringVar(value=1) # Amount of scoop(s)/litre(s)
-amount_left_str = tk.StringVar()
 
 
 # Clear the window
 def clear_window():
     # Clear the window
-    for items in window.winfo_children():
-        items.destroy()
+    for item in window.winfo_children():
+        item.destroy()
 
 
-# Validate if the user chose a number higher than 0 
+# Make the question
+def make_label():
+    tk.Label(textvariable=label_text, font=('arial', 14)).grid(row=0, column=0, pady=('0', '10')) # Make the question and add it to the window    
+
+
+# Update the label text
+def update_label_text(text):
+    label_text.set(text)
+    make_label()
+
+
+# Make the submit button
+def make_submit(command):  
+    tk.Button(text='submit', bg='gray', font=('arial', 10), command=command).grid(sticky='EW', columnspan=2, pady=('10', '0'))
+
+
+# Make the input
+def make_input(input:str, input_storage, array=None):
+    if input == "radiobutton":
+        # Make the options
+        for role in array:
+            ttk.Radiobutton(window, text=f"{role.capitalize()}", value=f"{role}", variable=input_storage).grid()
+    
+    elif input == "spinbox":
+        if isinstance(array, tuple):
+            for row, question in enumerate(array):
+                question_row = row + 1
+
+                answer = tk.StringVar()
+                input_storage.append(answer)
+
+                tk.Label(text=question, font=('arial', 14)).grid(row=question_row, column=0, sticky='w', pady=('0', '10'))
+                tk.Spinbox(window, textvariable=answer, from_=0, to=float('inf')).grid(row=question_row, column=1, sticky='w') # Input
+        else:
+            tk.Spinbox(window, textvariable=input_storage, from_=1, to=float('inf')).grid(row=0, column=1, sticky='w') # Input
+
+    elif input == "combobox":
+        combobox = ttk.Combobox(window, textvariable=input_storage, state='readonly')
+        combobox['values'] = array # All the options
+        combobox.grid(row=0, column=1, sticky='w')
+
+
+# Get the information what the user can buy
+def validate_role():
+    # Add the information what the user can buy
+    scoop_litre_information = "scoop" if user_role.get() == "customer" else "litre"
+    scoop_litre.set(scoop_litre_information)
+
+    make_question() # Go to the next question
+
+
+# Validate the amount for the scoop(s) / litre(s)
 def validate_amount():
-    amount = scoops_litres.get() # Users input
+    global must_ask_cone_cup
 
-    # IF the user chose a number higher than 0
-    if amount.isdigit() and amount[0] != '0':
-        ask_flavour() # Ask the flavour per scoop / litre
+    # Check if the user chose a number
+    try:
+        amount = int(scoops_litres_amount.get()) # Amount the user chose
+
+    # If the user did not choose a number
+    except ValueError:
+        scoops_litres_amount.set(1) # Reset the amount the user wants to buy
+
+    # If the user chose a number
     else:
-        scoops_litres.set(1) # Reset the value for the amount the user wants to buy
+        # Standard a cup
+        if amount >= 4 and amount <= 8:
+            cone_cup.set("cup")
+        else:
+            must_ask_cone_cup = True
+
+        # If the user chose a number that is not a valid option
+        if amount <= 0 or amount > 8:
+            scoops_litres_amount.set(1) # Reset the amount the user wants to buy
+        else:
+            make_question() # Go to the next question
 
 
-# Check if the user chose a valid flavour for every scoop/litre
-def validate_flavours():
-    total_amount = 0
+# Check if the user chose a flavour for every scoop / litre 
+def validate_flavour():
+    validation = True
+    flavour_total_amount = 0
+    max_amount = int(scoops_litres_amount.get())
 
-    scoops_litres_amount = int(scoops_litres.get()) # Total scoop(s) / litre(s)
-
-    question_information = "bolletje(s)" if user_role.get() == "particulier" else "liter(s)" # Information if the user wants to buy scoops or litres
-
-    # Check every flavour amount the user chose
-    for flavour_amount in flavour_answers:
-        flavour_amount = int(flavour_amount.get()) 
-
-        total_amount += flavour_amount # Add the amount to the total amount
+    for flavour_amount in flavour_amounts:
+        if not flavour_amount.get().isdigit():
+            break
+        else:
+            flavour_total_amount += int(flavour_amount.get())
+    
     else:
-        # When the user can add more scoop(s) / litre(s) to a flavour
-        if scoops_litres_amount > total_amount:
-            amount_left_str.set(f"U kan nog {scoops_litres_amount - total_amount} {question_information} toevoegen aan een smaak")
+        if flavour_total_amount > max_amount:
+            difference = flavour_total_amount - max_amount 
+
+            message = f"You added {difference} {scoop_litre.get()}(s) too much"
         
-        # When the user did add more scoop(s) / litre(s) than the max amount
-        elif scoops_litres_amount < total_amount:
-            amount_left_str.set(f"U heeft {total_amount - scoops_litres_amount} {question_information} teveel toegevoegd aan een smaak")
+        elif flavour_total_amount < max_amount:
+            difference = max_amount - flavour_total_amount 
+
+            message = f"You can add {difference} more {scoop_litre.get()}(s)"
+
+        if flavour_total_amount != max_amount:
+            label_text.set(message)
+
+        else:
+            make_question()
 
 
-# Get the role
-def ask_role():
-    roles = ("particulier", "zakelijk") # All the roles
+# Check if the user wants to see the receipt
+def validate_ask_receipt():
+    add_items()
 
-    # Make the question
-    roles_options = " of ".join(roles)
-    question = f"bent u {roles_options}"
-
-    tk.Label(text='Welkom bij Papi Gelato', font=('arial', 18, 'bold')).pack(fill='x') # Welcomes the user
-    tk.Label(text=question, font=('arial', 14, 'bold')).pack(fill='x') # Question
-
-    # Make the options
-    for role in roles:
-        ttk.Radiobutton(window, text=f"{role.capitalize()}", value=f"{role}", variable=user_role).pack() # Options
-    
-    # Add the submit button when all the options are made
+    if want_receipt.get() == "yes":
+        make_question() # Ask the same questions again
     else:
-        tk.Button(text="Verder", bg='gray', font=('arial', 10), command=get_scoops).pack(side='left', expand=True, fill='x') # Submit button
+        clear_window()
+        show_receipt() # Show the receipt to the user
 
 
-# Ask how many scoops / litres the user wants
-def get_scoops():
-    clear_window() # Clear the previous question(s)
+# Make the question with the function information
+def make_question(): 
+    global function_num
 
-    question = "liter(s) ijs" if user_role.get() == "zakelijk" else "bolletjes" # Information what the user must buy
+    function_name = list( function_information.keys() )[function_num] # Get the key for the question
 
-    tk.Label(text=f"Kies het aantal {question} wat u wilt kopen (voorbeeld: 1, 2, 3):", font=('arial', 14)).grid(row=0, column=0) # Question
-    tk.Spinbox(window, textvariable=scoops_litres, from_=1, to=float('inf')).grid(row=0, column=1) # Input
-    tk.Button(text="Submit", font=('arial', 10), bg='gray', command=validate_amount).grid(columnspan=2, sticky='nsew') # Button to submit the answer
+    # Get all the information to make the question
+    question = function_information[function_name]['question']() # Question
+    input_name = function_information[function_name]['input'] # Type of input
+    stringvar = function_information[function_name]['stringvar'] # Storage for the answer of the user
+    submit_function = function_information[function_name]['submit_function'] # Submit function
 
 
-# Ask the flavour per scoop / litre
-def ask_flavour():
-    clear_window()
+    clear_window() # Clear the previous question
+    update_label_text(question) # Add the new question
 
-    total_amount = int(scoops_litres.get()) # Chosen amount for scoop(s) / litre(s)
-
-    # Show the user how many scoop(s)/litre(s) he can add to the flavours
-    question_information = "bolletjes" if user_role.get() == "particulier" else "liters"
-    amount_left_str.set(f"U kan nog {total_amount} {question_information} toevoegen aan een smaak")
-    tk.Label(textvariable=amount_left_str, font=('arial', 14)).grid(row=0, column=0)
-
-    # For every flavour option
-    for row, flavour in enumerate(flavours):
-        row += 1
-
-        answer = tk.StringVar()
-        flavour_answers.append(answer)
+    # Check if the user can choice between a few options
+    try:
+        input_array = function_information[function_name]['input_array']
     
-        tk.Label(text=f"Hoeveel {question_information} wilt u met de smaak {flavour}", font=('arial', 14)).grid(row=row, column=0) # Question
-        tk.Spinbox(window, textvariable=answer, from_=0, to=float('inf')).grid(row=row, column=1) # Input
+    # If there is not a list with options
+    except KeyError:
+        make_input(input_name, stringvar) # Make the input to choice the option
     
-    # When every input is made
+    # If there is a list with options
+    else:   
+        make_input(input_name, stringvar, input_array) # Make the input to choice the option
+
+    make_submit(submit_function) # Make the submit button
+
+    # Go to the next question
+    function_num += 1
+
+    try:
+        new_function_name = list( function_information.keys() )[function_num] # Check if there is another question after the question the user is in
+    except IndexError:
+        function_num = 0 # Reset the question index
     else:
-        tk.Button(text="Submit", font=('arial', 10), bg='gray', command=validate_flavours).grid(columnspan=2, sticky='nsew') # Button to submit the answer
+        # If the user don't need to get asked for a cone or a cup
+        if new_function_name == "cone_cup" and not must_ask_cone_cup:
+            function_num += 1
 
 
-# Ask which topping the user wants to buy per scoop
-def ask_toppings():
-    pass
+# Add the items to the receipt dictionary
+def add_items():
+    amount = int(scoops_litres_amount.get())
+    role = user_role.get()
+    
+
+    items[role][scoop_litre.get()]['amount'] += amount
+
+    if cone_cup.get():
+        items[role][cone_cup.get()]['amount'] += 1
 
 
-# Add the items to the receipt
-def make_receipt():
-    pass
+# Show the bought items to the user
+def show_receipt():
+    role = user_role.get()
+
+    receipt_price = 0
+
+    for row, (item, item_information) in enumerate(zip(items[role], items[role].values())):
+        bought_item = False
+
+        try:
+            if item_information[cone_cup.get()]['amount'] > 0:
+                bought_item = True    
+        except KeyError:
+            if item_information['amount'] > 0:
+                bought_item = True
+
+
+        if bought_item:
+            try: 
+                item_price = item_information[cone_cup.get()]['price']
+                item_amount = item_information[cone_cup.get()]['amount']
+            except KeyError:
+                item_price = item_information['price']
+                item_amount = item_information['amount']
+
+
+            total_item_price = item_amount * item_price
+            receipt_price += total_item_price
+
+            tk.Label(text=f"{item}      {item_amount} * {item_price}    =   {round(total_item_price, 2)}  ", font=('arial', 14)).grid(row=row, column=0, pady=('0', '10')) # Make the question and add it to the window    
+
+
+
+
+
+function_information = {
+    "role": {
+        "question": lambda: "Are you a customer or a business?",
+        "input": "radiobutton",
+        "input_array": ("customer", "business"),
+        "submit_function": validate_role,
+        "stringvar": user_role
+    },
+
+    "amount": {
+        "question": lambda: f"How many {scoop_litre.get()}(s) do you want?",
+        "input": "spinbox",
+        "submit_function": validate_amount,
+        "stringvar": scoops_litres_amount
+    },
+
+    "flavour": {
+        "question": lambda: f"You can add {scoops_litres_amount.get()} more {scoop_litre.get()}(s)",
+        "input": "spinbox",
+        "input_array": ("Amount of strawberry", "Amount of chocolate", "Amount of strawberry", "Amount of strawberry"),
+        "submit_function": validate_flavour,
+        "stringvar": flavour_amounts
+    },
+
+    "cone_cup": {
+        "question": lambda: f"Do you want the {scoops_litres_amount.get()} in a cup or a bucket?",
+        "input": "combobox",
+        "input_array": ("cone", "cup"),
+        "submit_function": make_question,
+        "stringvar": cone_cup
+    },
+
+    "ask_receipt": {
+        "question": lambda: f"Do you want to buy more?",
+        "input": "radiobutton",
+        "input_array": ("yes", "no"),
+        "submit_function": validate_ask_receipt,
+        "stringvar": want_receipt
+    }
+}
 
 
 
 
 # When the program starts
 if __name__ == "__main__":
-    ask_role()
-    window.mainloop()
+    make_question()
+    window.mainloop() # Starts the window
