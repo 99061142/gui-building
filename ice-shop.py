@@ -286,17 +286,24 @@ def show_receipt():
             total_item_price = item_amount * item_price # Total price of the item
             receipt_price += total_item_price # Total receipt price without VAT
 
-            tk.Label(text=f"{item}           {item_amount} * {item_price}   = €{round(total_item_price, 2)}", font=('arial', 14)).grid(pady=('0', '5')) # Show the item, amount, price and the total price for the item
+
+            item_price = "{:.2f}".format(item_price)
+            total_item_price = "{:.2f}".format(total_item_price)
+
+            tk.Label(text=f"{item}           {item_amount} * {item_price}   = €{total_item_price}", font=('arial', 14)).grid(pady=('0', '5')) # Show the item, amount, price and the total price for the item
     else:
+        receipt_price = "{:.2f}".format(receipt_price)
+
         # Make the ending of the receipt
         tk.Label(text="                              ---------", font=('arial', 14)).grid(pady=('0', '5'))  
-        tk.Label(text=f"Total                     = €{round(receipt_price, 2)}", font=('arial', 14)).grid() # Show the total price with VAT
+        tk.Label(text=f"Total                     = €{receipt_price}", font=('arial', 14)).grid() # Show the total price with VAT
 
         # If the users role is business
         if user_role.get() == "business":
-            vat_price = receipt_price * 0.09
+            vat_price = receipt_price * 0.06
+            vat_price = "{:.2f}".format(vat_price)
 
-            tk.Label(text=f"VAT (9%)               = €{round(vat_price, 2)}", font=('arial', 14)).grid() # Show the VAT price
+            tk.Label(text=f"VAT (9%)               = €{vat_price}", font=('arial', 14)).grid() # Show the VAT price
 
 
 
@@ -320,7 +327,7 @@ function_information = {
     "flavour": {
         "question": lambda: f"You can add {scoops_litres_amount.get()} more {scoop_litre.get()}(s)",
         "input": "spinbox",
-        "input_array": ("Amount of strawberry", "Amount of chocolate", "Amount of strawberry", "Amount of strawberry"),
+        "input_array": ("Amount of strawberry", "Amount of chocolate", "Amount of vanilla"),
         "submit_function": validate_flavour,
         "stringvar": flavour_amounts
     },
