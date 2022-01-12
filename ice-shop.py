@@ -60,6 +60,7 @@ scoop_litre = tk.StringVar() # Information if the user must choose the amount of
 cone_cup = tk.StringVar(value="cone") # Users choice for a cone or a cup
 label_text = tk.StringVar() # Text inside the label
 want_receipt = tk.StringVar(value="no") # If the user wants the receipt
+topping = tk.StringVar(value="none")
 
 function_num = 0 # Index for the dictionary of the function information
 must_ask_cone_cup = False # If the user must gets asked for a cone / cup
@@ -247,52 +248,64 @@ def add_items():
     if cone_cup.get() and user_role.get() == "customer":
         items[role][cone_cup.get()]['amount'] += 1
 
+    if topping.get() != "none" and topping.get():
+        bought_topping = topping.get().replace(" ", "_").lower()
 
-# Show the bought items to the user
-def show_receipt():
+        items[role][bought_topping]['amount'] += 1
+
+
+# Add the items that the user bought to the receipt
+def bought_item_information():
+    bought_items = {'items': {}, 'end_price': {}}
     role = user_role.get()
 
     receipt_price = 0
+
+    for key, item_information in zip(items[role], items[role].values()):            
+        try:
+            item_information[cone_cup.get()]
+        except KeyError:
+            amount = item_information['amount']
+            price = item_information['price']
+        else:
+            amount = item_information[cone_cup.get()]['amount']
+            price = item_information[cone_cup.get()]['price']
+
+    
+        # Check with the role, if the user bought the item
+        if amount > 0:
+            receipt_price += price
+
+            bought_items['items'][key] = {}
+            bought_items['items'][key]['amount'] = amount
+            bought_items['items'][key]['price'] =  "{:.2f}".format(price)
+            bought_items['items'][key]['total_price'] = "{:.2f}".format(amount * price)
+    else:
+        bought_items['end_price']['total_price'] = "{:.2f}".format(receipt_price)
+        bought_items['end_price']['vat_price'] = "{:.2f}".format(receipt_price * 0.06)
+
+    return bought_items
+
+
+# Show the bought items to the user
+def show_receipt():
+    bought_items = bought_item_information()
 
 
     tk.Label(text='---------["Papi Gelato"]---------', font=('arial', 14)).grid(pady=('5', '10')) # Receipt start
 
     # For every item that the user can buy
-    for item, item_information in zip(items[role], items[role].values()):
-        bought_item = False # If the user bought the item
+    for key in bought_items['items']:
+        item_amount = bought_items['items'][key]['amount']
+        item_price = bought_items['items'][key]['price']
+        total_item_price = bought_items['items'][key]['total_price']
 
-        # Check if the user bought the item
-        try:
-            # Check with the role, if the user bought the item
-            if item_information[cone_cup.get()]['amount'] > 0:
-                bought_item = True    
-        except KeyError:
-            # Check without the role, if the user bought the item
-            if item_information['amount'] > 0:
-                bought_item = True
-
-        # If the user bought the item
-        if bought_item:
-            # Get the information with the role of the user
-            try: 
-                item_price = item_information[cone_cup.get()]['price']
-                item_amount = item_information[cone_cup.get()]['amount']
-            
-            # Get the information without the role of the user
-            except KeyError:
-                item_price = item_information['price']
-                item_amount = item_information['amount']
-
-            total_item_price = item_amount * item_price # Total price of the item
-            receipt_price += total_item_price # Total receipt price without VAT
-
-
-            item_price = "{:.2f}".format(item_price)
-            total_item_price = "{:.2f}".format(total_item_price)
-
-            tk.Label(text=f"{item}           {item_amount} * {item_price}   = €{total_item_price}", font=('arial', 14)).grid(pady=('0', '5')) # Show the item, amount, price and the total price for the item
+        if "_" in key:
+            key = key.replace("_", " ")
+    
+        tk.Label(text=f"{key.capitalize()}           {item_amount} * {item_price}   = €{total_item_price}", font=('arial', 14)).grid(pady=('0', '5')) # Show the item, amount, price and the total price for the item
     else:
-        receipt_price = "{:.2f}".format(receipt_price)
+        receipt_price = bought_items['end_price']['total_price']
 
         # Make the ending of the receipt
         tk.Label(text="                              ---------", font=('arial', 14)).grid(pady=('0', '5'))  
@@ -300,8 +313,7 @@ def show_receipt():
 
         # If the users role is business
         if user_role.get() == "business":
-            vat_price = receipt_price * 0.06
-            vat_price = "{:.2f}".format(vat_price)
+            vat_price = bought_items['end_price']['vat_price']
 
             tk.Label(text=f"VAT (9%)               = €{vat_price}", font=('arial', 14)).grid() # Show the VAT price
 
@@ -338,6 +350,14 @@ function_information = {
         "input_array": ("cone", "cup"),
         "submit_function": make_question,
         "stringvar": cone_cup
+    },
+
+    "topping": {
+        "question": lambda: f"Which topping do you want to add to your {scoops_litres_amount.get()} scoops?",
+        "input": "combobox",
+        "input_array": ("None", "Whipped cream", "Sprinkles", "Caramel sauce"),
+        "submit_function": make_question,
+        "stringvar": topping        
     },
 
     "ask_receipt": {
