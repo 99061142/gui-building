@@ -59,7 +59,7 @@ scoops_litres_amount = tk.StringVar(value='1') # Amount of scoop(s)/litre(s)
 scoop_litre = tk.StringVar() # Information if the user must choose the amount of scoop(s) or litre(s)
 cone_cup = tk.StringVar(value="cone") # Users choice for a cone or a cup
 label_text = tk.StringVar() # Text inside the label
-want_receipt = tk.StringVar() # If the user wants the receipt
+want_receipt = tk.StringVar(value="no") # If the user wants the receipt
 
 function_num = 0 # Index for the dictionary of the function information
 must_ask_cone_cup = False # If the user must gets asked for a cone / cup
@@ -186,9 +186,10 @@ def validate_flavour():
 def validate_ask_receipt():
     add_items()
 
-    if want_receipt.get() == "no":
+    if want_receipt.get() == "yes":
         make_question() # Ask the same questions again
     else:
+        clear_window()
         show_receipt() # Show the receipt to the user
 
 
@@ -243,14 +244,40 @@ def add_items():
 
     items[role][scoop_litre.get()]['amount'] += amount
 
-    if must_ask_cone_cup:
+    if cone_cup.get():
         items[role][cone_cup.get()]['amount'] += 1
 
 
 # Show the bought items to the user
 def show_receipt():
-    pass
+    role = user_role.get()
 
+    receipt_price = 0
+
+    for row, (item, item_information) in enumerate(zip(items[role], items[role].values())):
+        bought_item = False
+
+        try:
+            if item_information[cone_cup.get()]['amount'] > 0:
+                bought_item = True    
+        except KeyError:
+            if item_information['amount'] > 0:
+                bought_item = True
+
+
+        if bought_item:
+            try: 
+                item_price = item_information[cone_cup.get()]['price']
+                item_amount = item_information[cone_cup.get()]['amount']
+            except KeyError:
+                item_price = item_information['price']
+                item_amount = item_information['amount']
+
+
+            total_item_price = item_amount * item_price
+            receipt_price += total_item_price
+
+            tk.Label(text=f"{item}      {item_amount} * {item_price}    =   {round(total_item_price, 2)}  ", font=('arial', 14)).grid(row=row, column=0, pady=('0', '10')) # Make the question and add it to the window    
 
 
 
@@ -289,7 +316,7 @@ function_information = {
     },
 
     "ask_receipt": {
-        "question": lambda: f"Do you want the receipt?",
+        "question": lambda: f"Do you want to buy more?",
         "input": "radiobutton",
         "input_array": ("yes", "no"),
         "submit_function": validate_ask_receipt,
