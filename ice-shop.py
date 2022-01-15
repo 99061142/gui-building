@@ -54,17 +54,23 @@ items = {
 }
 
 
-user_role = tk.StringVar(value='customer') # Users role
-scoops_litres_amount = tk.StringVar(value='1') # Amount of scoop(s)/litre(s)
+user_role = tk.StringVar(value="customer") # Users role
+scoops_litres_amount = tk.StringVar() # Amount of scoop(s)/litre(s)
 scoop_litre = tk.StringVar() # Information if the user must choose the amount of scoop(s) or litre(s)
-cone_cup = tk.StringVar(value="cone") # Users choice for a cone or a cup
+cone_cup = tk.StringVar() # Users choice for a cone or a cup
 label_text = tk.StringVar() # Text inside the label
-want_receipt = tk.StringVar(value="no") # If the user wants the receipt
-topping = tk.StringVar(value="none")
+buy_more = tk.StringVar() # If the user wants the receipt
+topping = tk.StringVar()
 
-function_num = 0 # Index for the dictionary of the function information
-must_ask_cone_cup = False # If the user must gets asked for a cone / cup
-flavour_amounts = [] # Amount for the flavours
+
+importance_num = 0 # Index for the dictionary of the function information
+question_num = 0
+function_importance_num = 0
+
+vat_percentage = 6 # VAT %
+
+
+flavour_amounts = []
 
 
 
@@ -106,6 +112,7 @@ def make_input(input:str, input_storage, array=None):
                 answer = tk.StringVar()
                 input_storage.append(answer)
 
+
                 tk.Label(text=question, font=('arial', 14)).grid(row=question_row, column=0, sticky='w', pady=('0', '10'))
                 tk.Spinbox(window, textvariable=answer, from_=0, to=float('inf')).grid(row=question_row, column=1, sticky='w') # Input
         else:
@@ -119,17 +126,20 @@ def make_input(input:str, input_storage, array=None):
 
 # Get the information what the user can buy
 def validate_role():
+    global user_chose_role
+
+    user_chose_role = True
+
+
     # Add the information what the user can buy
     scoop_litre_information = "scoop" if user_role.get() == "customer" else "litre"
     scoop_litre.set(scoop_litre_information)
 
-    make_question() # Go to the next question
+    make_dictionary_route() # Go to the next question
 
 
 # Validate the amount for the scoop(s) / litre(s)
 def validate_amount():
-    global must_ask_cone_cup
-
     # Check if the user chose a number
     try:
         amount = int(scoops_litres_amount.get()) # Amount the user chose
@@ -143,14 +153,12 @@ def validate_amount():
         # Standard a cup
         if amount >= 4 and amount <= 8:
             cone_cup.set("cup")
-        else:
-            must_ask_cone_cup = True
 
         # If the user chose a number that is not a valid option
         if amount <= 0 or amount > 8:
             scoops_litres_amount.set(1) # Reset the amount the user wants to buy
         else:
-            make_question() # Go to the next question
+            make_dictionary_route() # Go to the next question
 
 
 # Check if the user chose a flavour for every scoop / litre 
@@ -180,61 +188,30 @@ def validate_flavour():
             label_text.set(message)
 
         else:
-            make_question()
+            make_dictionary_route()
 
 
 # Check if the user wants to see the receipt
 def validate_ask_receipt():
     add_items()
 
-    if want_receipt.get() == "yes":
-        make_question() # Ask the same questions again
+    if buy_more.get() == "yes":
+        item_values() # Reset the values
+
+        make_dictionary_route() # Ask the same questions again
     else:
-        clear_window()
         show_receipt() # Show the receipt to the user
 
 
-# Make the question with the function information
-def make_question(): 
-    global function_num
+def item_values():
+    global flavour_amounts
 
-    function_name = list( function_information.keys() )[function_num] # Get the key for the question
+    scoops_litres_amount.set(value="1") # Amount of scoop(s)/litre(s)
+    cone_cup.set("cone") # Users choice for a cone or a cup
+    buy_more.set("no") # If the user wants the receipt
+    topping.set("none") # Topping the user chose
 
-    # Get all the information to make the question
-    question = function_information[function_name]['question']() # Question
-    input_name = function_information[function_name]['input'] # Type of input
-    stringvar = function_information[function_name]['stringvar'] # Storage for the answer of the user
-    submit_function = function_information[function_name]['submit_function'] # Submit function
-
-
-    clear_window() # Clear the previous question
-    update_label_text(question) # Add the new question
-
-    # Check if the user can choice between a few options
-    try:
-        input_array = function_information[function_name]['input_array']
-    
-    # If there is not a list with options
-    except KeyError:
-        make_input(input_name, stringvar) # Make the input to choice the option
-    
-    # If there is a list with options
-    else:   
-        make_input(input_name, stringvar, input_array) # Make the input to choice the option
-
-    make_submit(submit_function) # Make the submit button
-
-    # Go to the next question
-    function_num += 1
-
-    try:
-        new_function_name = list( function_information.keys() )[function_num] # Check if there is another question after the question the user is in
-    except IndexError:
-        function_num = 0 # Reset the question index
-    else:
-        # If the user don't need to get asked for a cone or a cup
-        if new_function_name == "cone_cup" and not must_ask_cone_cup:
-            function_num += 1
+    flavour_amounts.clear() # Delete all the flavour amounts
 
 
 # Add the items to the receipt dictionary
@@ -282,13 +259,15 @@ def bought_item_information():
             bought_items['items'][key]['total_price'] = "{:.2f}".format(amount * price)
     else:
         bought_items['end_price']['total_price'] = "{:.2f}".format(receipt_price)
-        bought_items['end_price']['vat_price'] = "{:.2f}".format(receipt_price * 0.06)
+        bought_items['end_price']['vat_price'] = "{:.2f}".format(receipt_price / 100 * vat_percentage)
 
     return bought_items
 
 
 # Show the bought items to the user
 def show_receipt():
+    clear_window()
+
     bought_items = bought_item_information()
 
 
@@ -315,57 +294,139 @@ def show_receipt():
         if user_role.get() == "business":
             vat_price = bought_items['end_price']['vat_price']
 
-            tk.Label(text=f"VAT (9%)               = €{vat_price}", font=('arial', 14)).grid() # Show the VAT price
+            tk.Label(text=f"VAT ({vat_percentage}%)               = €{vat_price}", font=('arial', 14)).grid() # Show the VAT price
+
+
+def make_dictionary_route():
+    global function_importance_num
+    global question_num
+
+    # Get the key of all the questions
+    function_importance_names = list(function_information)
+    function_importance_name = function_importance_names[function_importance_num]
+
+    # Get the key with all the information for the question in it
+    function_names = list( function_information[function_importance_name] )
+    function_name = function_names[question_num]
+
+    question_information = function_information[function_importance_name][function_name] # Get all the information about the question
+
+
+    if user_role.get() == "business" and len(flavour_amounts) > 0:
+        add_items()
+        show_receipt()
+    else:
+        question_num += 1 # Go to the next question
+
+
+        # If it is the last question of the dictionary
+        if question_num == len(function_information[function_importance_name]):
+            # Check if the next key for all the questions is for a specific role
+            try:
+                testing_function_num = function_importance_num + 1
+
+                # If the key name is the same as all the possible roles
+                if list(function_information)[testing_function_num] in ("customer", "business"):
+                    # While the key name is not the role the user chose, or a name that is not a role
+                    while list(function_information)[testing_function_num] != user_role.get():
+                        testing_function_num += 1 # Go to the next key
+                    
+                    # If it is the role the user chose
+                    else:
+                        function_importance_num = testing_function_num # Set the index to that key
+                
+                else:
+                    function_importance_num += 1 # Go to the next key
+
+            # When all the questions are done
+            except IndexError:            
+                function_importance_num = 1 # Go to all the questions after the "starting questions" list with questions
+            finally:
+                question_num = 0 # Reset the index of the question
+
+        make_question(question_information) # Make the question
+
+
+# Make the question with the function information
+def make_question(question_information): 
+    # Get all the information to make the question
+    question = question_information['question']() # Question
+    input_name = question_information['input'] # Type of input
+    stringvar = question_information['stringvar'] # Storage for the answer of the user
+    submit_function = question_information['submit_function'] # Submit function
+
+
+    clear_window() # Clear the window
+    update_label_text(question) # Add the title
+
+    try:
+        input_array = question_information['input_array'] # List with options for the input
+    
+    # If there is not a list with options
+    except KeyError:
+        make_input(input_name, stringvar) # Make the input to choice the option
+    
+    # If there is a list with options
+    else:   
+        make_input(input_name, stringvar, input_array) # Make the input to choice the option
+
+    make_submit(submit_function) # Make the submit button
 
 
 
 
 function_information = {
-    "role": {
-        "question": lambda: "Are you a customer or a business?",
-        "input": "radiobutton",
-        "input_array": ("customer", "business"),
-        "submit_function": validate_role,
-        "stringvar": user_role
+    "starting_questions": {
+        "question": {
+            "question": lambda: "Are you a customer or a business?",
+            "input": "radiobutton",
+            "input_array": ("customer", "business"),
+            "submit_function": validate_role,
+            "stringvar": user_role
+        }
     },
 
-    "amount": {
-        "question": lambda: f"How many {scoop_litre.get()}(s) do you want?",
-        "input": "spinbox",
-        "submit_function": validate_amount,
-        "stringvar": scoops_litres_amount
+    "always": {
+        "amount": {
+            "question": lambda: f"How many {scoop_litre.get()}(s) do you want?",
+            "input": "spinbox",
+            "submit_function": validate_amount,
+            "stringvar": scoops_litres_amount
+        },
+
+        "flavour": {
+            "question": lambda: f"You can add {scoops_litres_amount.get()} more {scoop_litre.get()}(s)",
+            "input": "spinbox",
+            "input_array": ("Amount of strawberry", "Amount of chocolate", "Amount of vanilla"),
+            "submit_function": validate_flavour,
+            "stringvar": flavour_amounts
+        }
     },
 
-    "flavour": {
-        "question": lambda: f"You can add {scoops_litres_amount.get()} more {scoop_litre.get()}(s)",
-        "input": "spinbox",
-        "input_array": ("Amount of strawberry", "Amount of chocolate", "Amount of vanilla"),
-        "submit_function": validate_flavour,
-        "stringvar": flavour_amounts
-    },
+    "customer": {
+        "cone_cup": {
+            "question": lambda: f"Do you want the {scoops_litres_amount.get()} in a cup or a bucket?",
+            "input": "combobox",
+            "input_array": ("cone", "cup"),
+            "submit_function": make_dictionary_route,
+            "stringvar": cone_cup
+        },
 
-    "cone_cup": {
-        "question": lambda: f"Do you want the {scoops_litres_amount.get()} in a cup or a bucket?",
-        "input": "combobox",
-        "input_array": ("cone", "cup"),
-        "submit_function": make_question,
-        "stringvar": cone_cup
-    },
+        "topping": {
+            "question": lambda: f"Which topping do you want to add to your {scoops_litres_amount.get()} scoops?",
+            "input": "combobox",
+            "input_array": ("None", "Whipped cream", "Sprinkles", "Caramel sauce"),
+            "submit_function": make_dictionary_route,
+            "stringvar": topping        
+        },
 
-    "topping": {
-        "question": lambda: f"Which topping do you want to add to your {scoops_litres_amount.get()} scoops?",
-        "input": "combobox",
-        "input_array": ("None", "Whipped cream", "Sprinkles", "Caramel sauce"),
-        "submit_function": make_question,
-        "stringvar": topping        
-    },
-
-    "ask_receipt": {
-        "question": lambda: f"Do you want to buy more?",
-        "input": "radiobutton",
-        "input_array": ("yes", "no"),
-        "submit_function": validate_ask_receipt,
-        "stringvar": want_receipt
+        "ask_receipt": {
+            "question": lambda: f"Do you want to buy more?",
+            "input": "radiobutton",
+            "input_array": ("yes", "no"),
+            "submit_function": validate_ask_receipt,
+            "stringvar": buy_more
+        }
     }
 }
 
@@ -374,5 +435,6 @@ function_information = {
 
 # When the program starts
 if __name__ == "__main__":
-    make_question()
+    item_values()
+    make_dictionary_route()
     window.mainloop() # Starts the window
