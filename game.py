@@ -50,8 +50,8 @@ questions_information = {
 }
 
 
-chosen_difficulty = tk.StringVar(value="easy")
-question_answers = []
+user_difficulty = tk.StringVar(value="easy")
+user_sum_answers = []
 
 
 # Clear the window
@@ -68,6 +68,37 @@ def make_label(text):
 # Make the submit button
 def make_submit(command):  
     tk.Button(text='submit', bg='gray', font=('arial', 10), command=command).grid(sticky='EW', columnspan=2, pady=('10', '0'))
+
+
+def validate_question_answers():
+    difficulties = list(questions_information)
+    difficulty = user_difficulty.get()
+
+    questions = questions_information[difficulty]['questions']
+    max_wrong_answers = questions_information[difficulty]['max_fails']
+
+    wrong_answers = 0
+    non_numbers = 0 # Value of non numbers as answer
+
+    # Check if every value is a number
+    for index, user_answer in enumerate(user_sum_answers):
+        user_answer = user_answer.get() # Users answer
+
+        # Check if it is a number
+        try:
+            int(user_answer)
+
+        # If it is not a number
+        except ValueError:
+            user_sum_answers[index].set(0) # Reset the users input
+            non_numbers += 1
+    else:    
+        if non_numbers == 0:
+            check_good_answers()
+
+
+def check_good_answers():   
+    pass
 
 
 # Make the input(s)
@@ -87,7 +118,7 @@ def make_input(input_type:str, array):
 
             # Add all the answers to a list
             answer = tk.StringVar()
-            question_answers.append(answer)
+            user_sum_answers.append(answer)
 
 
             tk.Label(text=question, font=('arial', 14)).grid(row=question_row, column=0, pady=('0', '10')) # Input label
@@ -95,24 +126,25 @@ def make_input(input_type:str, array):
 
     elif input_type == "radiobutton":
         for row, difficulty_option in enumerate(array):
-            ttk.Radiobutton(window, text=difficulty_option, value=difficulty_option, variable=chosen_difficulty).grid(sticky='e') # Input
+            ttk.Radiobutton(window, text=difficulty_option, value=difficulty_option, variable=user_difficulty).grid(sticky='e') # Input
 
 
 # Return the questions of the difficulty the user is in
 def make_difficulty_questions():
-    questions = questions_information[chosen_difficulty.get()]['questions'] # ALl the questions for the difficulty the user is in
+    questions = questions_information[user_difficulty.get()]['questions'] # ALl the questions for the difficulty the user is in
 
     return questions # Return the questions
 
 
+# Make the items for the questions
 def show_questions():   
     clear_window()
     make_label(f"Calculate the questions on the screen")
     make_input("spinbox", make_difficulty_questions)
-    make_submit("")
+    make_submit(validate_question_answers)
 
 
-
+# Make the items to ask the starting difficulty
 def choose_gamemode():
     make_label("Choose the starting difficulty")
     make_input("radiobutton", questions_information)
