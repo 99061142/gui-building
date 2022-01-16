@@ -59,7 +59,7 @@ sum_information = {
 user_difficulty = tk.StringVar(value="easy") # Which difficulty the user is on
 
 
-sum_question_answer = [] # All the sum answers of the user
+user_sum_answers = [] # All the sum answers of the user
 
 
 # Clear everythign on the window
@@ -79,8 +79,41 @@ def make_submit(command):
 
 
 # Validate the answers the user gave on the questions
-def validate_user_answer():
-    pass
+def validate_user_answers():
+    error_made = False # If the user made an error
+    user_answers = [user_answer.get() for user_answer in user_sum_answers] # Every answer of the user
+
+    # For every question
+    for user_answer in user_answers:
+        # Check if it is a number
+        try:
+            int(user_answer) 
+
+        # If it is not a number
+        except ValueError:
+            user_answer.set(0) # Reset the value of the input
+            error_made = True 
+    
+    # If every answer is validated
+    else:
+        # If all the answers of the user were numbers
+        if not error_made:
+            error_made = False
+            calculate_user_answer(user_answers) # Calculate the mistakes of the user
+
+
+# Check if the user gave the good answers on the questions
+def calculate_user_answer(user_answers:list):
+    # Get all the answers
+    difficulty = user_difficulty.get() # Difficulty the user is on
+    questions = sum_information[difficulty]['questions'] # All the questions
+    answers = [eval(question) for question in questions] # All the answers on the questions
+
+    user_answers = [int(user_answer) for user_answer in user_answers] # All the answers of the user
+
+    # For every question
+    for user_answer, answer in zip(user_sum_answers, answers):
+        pass
 
 
 
@@ -96,7 +129,7 @@ def make_questions():
 
         # Remember the answer of the user
         answer = tk.StringVar()
-        sum_question_answer.append(answer)
+        user_sum_answers.append(answer)
 
         tk.Label(window, text=f"{question} =", font=('arial', 14)).grid(row=row, column=0, pady=('0', '10')) # Show the question before the input
         tk.Spinbox(window, textvariable=answer, from_=0, to=float('inf')).grid(row=row, column=1) # Input
@@ -119,7 +152,7 @@ def question_screen():
 
     make_label(f"Questions for the difficulty '{user_difficulty.get()}'") # Label above the input(s)
     make_questions() # Make / show all the questions on screen
-    make_submit(validate_user_answer) # Add the submit button
+    make_submit(validate_user_answers) # Add the submit button
 
 
 # Call the functions for the starting difficulty choosing screen
