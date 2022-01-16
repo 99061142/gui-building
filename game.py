@@ -15,9 +15,9 @@ sum_information = {
             "1 + 1"
         ],
 
-        "max_fails": 0,
+        "max_mistakes": 0,
 
-        "user_fails": 0,
+        "user_mistakes": 0,
 
         "questions_made": False
     },
@@ -31,9 +31,9 @@ sum_information = {
             "1 + 1"
         ],
 
-        "max_fails": 0,
+        "max_mistakes": 0,
 
-        "user_fails": 0,
+        "user_mistakes": 0,
 
         "questions_made": False
     },
@@ -47,9 +47,9 @@ sum_information = {
             "1 + 1"
         ],
 
-        "max_fails": 1,
+        "max_mistakes": 1,
 
-        "user_fails": 0,
+        "user_mistakes": 0,
 
         "questions_made": False
     }
@@ -81,13 +81,12 @@ def make_submit(command):
 # Validate the answers the user gave on the questions
 def validate_user_answers():
     error_made = False # If the user made an error
-    user_answers = [user_answer.get() for user_answer in user_sum_answers] # Every answer of the user
 
     # For every question
-    for user_answer in user_answers:
+    for user_answer in user_sum_answers:
         # Check if it is a number
         try:
-            int(user_answer) 
+            int(user_answer.get()) 
 
         # If it is not a number
         except ValueError:
@@ -99,22 +98,68 @@ def validate_user_answers():
         # If all the answers of the user were numbers
         if not error_made:
             error_made = False
-            calculate_user_answer(user_answers) # Calculate the mistakes of the user
+            calculate_user_answer() # Calculate the mistakes of the user
 
 
 # Check if the user gave the good answers on the questions
-def calculate_user_answer(user_answers:list):
-    # Get all the answers
+def calculate_user_answer():
+    mistakes_made = 0
+
     difficulty = user_difficulty.get() # Difficulty the user is on
-    questions = sum_information[difficulty]['questions'] # All the questions
+
+    sum_information_route = sum_information[difficulty] # Route to the users difficulty sum information
+
+    # Get all the answers
+    questions = sum_information_route['questions'] # All the questions
     answers = [eval(question) for question in questions] # All the answers on the questions
 
-    user_answers = [int(user_answer) for user_answer in user_answers] # All the answers of the user
+    user_answers = [int( user_answer.get() ) for user_answer in user_sum_answers] # All the answers of the user
 
     # For every question
-    for user_answer, answer in zip(user_sum_answers, answers):
-        pass
+    for user_answer, answer in zip(user_answers, answers):
+        if user_answer != answer:
+            mistakes_made += 1
+        
+    else:
+        sum_information_route['user_mistakes'] = mistakes_made
+        sum_information_route['questions_made'] = True
 
+        get_new_difficulty(difficulty, sum_information_route, mistakes_made)
+
+
+# Get the new difficulty, or show the endscreen if the user is done with the questions
+def get_new_difficulty(difficulty:str, sum_information_route:dict, mistakes_made:int):
+    difficulties = list( sum_information.keys() ) # ALl the difficulties
+
+    end_score = "won" if mistakes_made <= sum_information_route['max_mistakes'] else "lost" # Get if the user lost or won
+    add_index_number = 1 if end_score == "won" else -1 # Increase or decrease the index of the difficulty out of all the difficulty options
+    
+    must_show_endscreen = False # If the user lost or won the game
+    
+    # If the user did not lose the easy questions
+    if difficulty != "easy" or difficulty == "easy" and end_score == "won":
+        # Check if the user did not win the last difficulty
+        try:
+            # Get the new difficulty
+            next_difficulty_index = difficulties.index(difficulty) + add_index_number
+            next_difficulty = difficulties[next_difficulty_index]
+        
+        # If the user won the hardest difficulty
+        except IndexError:
+            must_show_endscreen = True 
+        
+        # If the difficulty could be changed
+        else:
+            user_difficulty.set(next_difficulty) # Update the difficulty
+            question_screen() # Show the new questions
+    
+    # If the user lost the easy difficulty
+    else:
+        must_show_endscreen = True
+
+    # If the user lost or won the game
+    if must_show_endscreen:
+        pass
 
 
 # Make the questions / show the questions on screen
@@ -149,6 +194,7 @@ def make_difficulty_options():
 # Call the functions for the question screen
 def question_screen():  
     clear_window() # Clear everything on the window
+    user_sum_answers.clear() # Delete everything in the list
 
     make_label(f"Questions for the difficulty '{user_difficulty.get()}'") # Label above the input(s)
     make_questions() # Make / show all the questions on screen
