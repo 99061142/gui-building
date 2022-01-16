@@ -16,9 +16,7 @@ sum_information = {
         ],
 
         "max_mistakes": 0,
-
         "user_mistakes": 0,
-
         "questions_made": False
     },
 
@@ -32,9 +30,7 @@ sum_information = {
         ],
 
         "max_mistakes": 0,
-
         "user_mistakes": 0,
-
         "questions_made": False
     },
 
@@ -48,17 +44,13 @@ sum_information = {
         ],
 
         "max_mistakes": 1,
-
         "user_mistakes": 0,
-
         "questions_made": False
     }
 }
 
 
 user_difficulty = tk.StringVar(value="easy") # Which difficulty the user is on
-
-
 user_sum_answers = [] # All the sum answers of the user
 
 
@@ -159,7 +151,7 @@ def get_new_difficulty(difficulty:str, sum_information_route:dict, mistakes_made
 
     # If the user lost or won the game
     if must_show_endscreen:
-        pass
+        end_screen(difficulty, end_score)
 
 
 # Make the questions / show the questions on screen
@@ -189,6 +181,13 @@ def make_difficulty_options():
         row = num + 1
 
         ttk.Radiobutton(window, text=f"{difficulty.capitalize()}", value=difficulty, variable=user_difficulty).grid(row=row)
+
+
+# Endscreen if the game is over
+def end_screen(difficulty:str, end_score:str):
+    clear_window()
+
+    make_label(f"You {end_score} the game, your highest difficulty was '{difficulty}'")
 
 
 # Call the functions for the question screen
