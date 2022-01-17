@@ -51,6 +51,7 @@ sum_information = {
 
 
 user_difficulty = tk.StringVar(value="easy") # Which difficulty the user is on
+highest_difficulty = tk.StringVar()
 user_sum_answers = [] # All the sum answers of the user
 
 
@@ -135,23 +136,45 @@ def get_new_difficulty(difficulty:str, sum_information_route:dict, mistakes_made
             # Get the new difficulty
             next_difficulty_index = difficulties.index(difficulty) + add_index_number
             next_difficulty = difficulties[next_difficulty_index]
-        
+
         # If the user won the hardest difficulty
         except IndexError:
-            must_show_endscreen = True 
-        
-        # If the difficulty could be changed
-        else:
-            user_difficulty.set(next_difficulty) # Update the difficulty
-            question_screen() # Show the new questions
-    
+            must_show_endscreen = True # If the user must see the end screen
+
     # If the user lost the easy difficulty
     else:
-        must_show_endscreen = True
+        must_show_endscreen = True # If the user must see the end screen
 
-    # If the user lost or won the game
+    # If the user lost the lowest difficulty or won the highest difficulty
     if must_show_endscreen:
-        end_screen(difficulty, end_score)
+        get_new_gamemode(must_show_endscreen, end_score) # Get the new questions, or show the end screen
+    else:
+        get_new_gamemode(must_show_endscreen, end_score, next_difficulty) # Get the new questions, or show the end screen
+
+
+# Check if the user must see the new questions, or that the user is done with the game
+def get_new_gamemode(must_show_endscreen:bool, end_score:str, next_difficulty:str=None):
+    difficulty = user_difficulty.get() # The difficulty the user is on
+
+    # If the user did not  lose the lowest difficulty and did not win the highest difficulty
+    if next_difficulty != None:
+        next_difficulty_user_mistakes = sum_information[next_difficulty]['user_mistakes'] # Mistakes the user made on the next difficulty
+        next_difficulty_max_mistakes = sum_information[next_difficulty]['max_mistakes'] # Max mistakes the user could make on the next difficulty
+        next_difficulty_questions_made = sum_information[next_difficulty]['questions_made'] # If the user made the next difficulty questions
+
+        if next_difficulty_questions_made:
+            if next_difficulty_user_mistakes <= next_difficulty_max_mistakes:
+                difficulty = next_difficulty # Update the difficulty to the next difficulty
+
+            must_show_endscreen = True # If the user must see the end screen
+
+
+    if must_show_endscreen: 
+        highest_difficulty.set(difficulty) # Update the highest difficulty
+        end_screen(end_score) # Show if the user lost or won
+    else:
+        user_difficulty.set(next_difficulty) # Update the difficulty
+        question_screen() # Show the new question screen
 
 
 # Make the questions / show the questions on screen
@@ -184,10 +207,10 @@ def make_difficulty_options():
 
 
 # Endscreen if the game is over
-def end_screen(difficulty:str, end_score:str):
-    clear_window()
+def end_screen(end_score:str):
+    clear_window() # Clear everything on the window
 
-    make_label(f"You {end_score} the game, your highest difficulty was '{difficulty}'")
+    make_label(f"You {end_score} the game, your highest difficulty was '{highest_difficulty.get()}'") # Label that show the users end score
 
 
 # Call the functions for the question screen
